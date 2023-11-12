@@ -4,7 +4,7 @@ from Insert_Script import strFromatTime
 db = mysql.connector.connect(
 	host="localhost",
 	user="root",
-	passwd="T@stigers231",
+	passwd="passwd",
 	database = "train_db"
 	)
 
