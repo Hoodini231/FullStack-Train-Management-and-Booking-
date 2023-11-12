@@ -36,8 +36,8 @@ class Email:
 class Send_Email:
     def __init__(self, email_name, subject_name, bodytext):
         reciever = email_name
-        sender = "BestBulletTrainINC@gmail.com"
-        pswd = "jogkfdujsdutjtsh"
+        sender = "INSERTCOMPANYEMAIL@gmail.com"
+        pswd = "PASSWORD"
         em = EmailMessage()
         em['From'] = sender
         em['To'] = reciever
