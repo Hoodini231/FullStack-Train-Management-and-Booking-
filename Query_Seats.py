@@ -7,7 +7,7 @@ from mysql.connector import RefreshOption
 db = mysql.connector.connect(
 	host="localhost",
 	user="root",
-	passwd="T@stigers231",
+	passwd="passwd",
 	database = "train_db"
 	)
 mcurs = db.cursor(buffered = True)
