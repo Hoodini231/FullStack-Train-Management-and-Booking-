@@ -1,7 +1,9 @@
 #New project, Train ticket booker#
 import math
+
 from tkinter import *
 import tkinter.ttk as tkk
+from tkmacosx import *
 from tkcalendar import Calendar
 from tkcalendar import DateEntry
 from datetime import datetime
@@ -19,7 +21,7 @@ class App(Tk):
 		
 		self.resizable(False, False)
 		self.iconbitmap('Images/ticketingIcon.ico')
-		self.borderlessMode()
+		#self.borderlessMode()
 
 		self.container = Frame(self)
 		self.container.pack()
@@ -68,7 +70,7 @@ class App(Tk):
 		frame = Toplevel(self)
 		frame.resizable(False, False)
 		frame.geometry("900x600")
-		frame.title("Map of Central Train line in Croatia")
+		frame.title("Map of Central Train line in Japan")
 		frame.iconbitmap('Images/ticketingIcon.ico')
 		mapImage = PhotoImage(file = "Images/map.png")
 		mapImageLabel = Label(frame,image = mapImage, highlightthickness=0)
@@ -79,7 +81,6 @@ class App(Tk):
 		frame = self.frames[page_name]
 		frame.tkraise()
 		self.borderlessMode()
-		print("hello")
 
 class homePage(Frame):
 	def __init__(self, parent, controller):
@@ -155,11 +156,11 @@ class trainTimeTable(Frame):
 		event.widget.master.focus_set()
 
 	def show_train_routes_on_date(self):
-		date = self.get_date()
+		return self.get_date()
 
 	def get_date(self):
-		date = self.calendar.get_date()
-		return date
+		return self.calendar.get_date()
+		
 
 	def train_info_popup(self):
 		win = Frame(self, width = 1280, height = 780)
@@ -221,7 +222,7 @@ class trainTimeTable(Frame):
 		back_button = Button(frame, image = image, relief = FLAT, command = lambda:frame.pack_forget())
 		back_button.image = image
 		back_button.place(x = 30, y = 65, width = 40, height = 37)
-		Button(frame, text = "Change Time of Dept.", relief = FLAT, bg = "#9C9EA3", command=lambda:self.change_TOD()).place(x = 130, y = 65)
+		Button(frame, text = "Change Time of Dept.", relief = FLAT, bg = "#9C9EA3", command=lambda:self.change_TOD_window()).place(x = 130, y = 65)
 		Button(frame, text = "Change Date", relief = FLAT, bg = "#9C9EA3", command = lambda:self.date_popup()).place(x = 280, y = 65)
 		Label(frame, text = "Route ID", bg = "#6A77B6").place(x = 30, y = 120, width = 70)
 		Label(frame, text = self.routes[id][0]).place(x = 30, y = 144, width = 70 )
@@ -240,8 +241,9 @@ class trainTimeTable(Frame):
 	def delete_train(self):
 		trq = Train_Route_Querys()
 		trq.delete_route(self.routes[self.trainVar.get()][0])
+		#refresh the page
 
-	def change_TOD(self):
+	def change_TOD_window(self):
 		win3 = Toplevel(self)
 		win3.geometry("300x150")
 		win3.title("Change Time of Departure")
@@ -250,20 +252,27 @@ class trainTimeTable(Frame):
 		self.new_tod = StringVar()
 		tod_entry = Entry(frame4, textvariable=self.new_tod)
 		tod_entry.place(x = 75, y= 30, width = 150)
-		butt = Button(frame4, text = "Change TOD now", command = lambda: self.a())
+		butt = Button(frame4, text = "Change TOD now", command = lambda: self.change_TOD_func())
 		butt.place(x = 100, y = 50, width = 100)
 
-	def a(self):
+	def change_TOD_func(self):
 		new = int(self.new_tod.get())
 		if new < 0 or new > 2359:
-			print("ERROR PLEASE ENTER A CORRECT TIME")
+			error_popup()
 		else:
 			trainID = self.routes[self.trainVar.get()][0]
 			trq = Train_Route_Querys()
-			print(self.new_tod.get())
 			new_timings = trq.create_timings_fromTOD(self.new_tod.get())
 			trq.change_timings_train(new_timings, trainID)
 			self.specific_train_page(trainID, self.routes)
+
+	def error_popup(self):
+		win = Toplevel(self.pop_up_booking)
+		win.geometry("100x50")
+		win.title("ERROR")
+		frame1 = Frame(win, width = 100, height = 50)
+		frame1.pack()
+		Label(frame1, text = "ERROR: PLEASE ENTER A CORRECT TIME").pack()
 
 	def date_popup(self):
 		win4 = Toplevel(self)
@@ -312,6 +321,8 @@ class bookingPage(Frame):
 		
 		Frame.__init__(self, parent)
 		self.stop_list = ['Tokyo','ShinYokohama','Mishima','Shizuoka','Hamatsu','Nagoya','Maibara','Kyoto']
+		self.current_avail_other_endstop_list = ['ShinYokohama','Mishima','Shizuoka','Hamatsu','Nagoya','Maibara','Kyoto']
+		self.current_avail_other_startstop_list = ['Tokyo','ShinYokohama','Mishima','Shizuoka','Hamatsu','Nagoya','Maibara','Kyoto']
 		self.controller = controller
 		self.bgPlain = PhotoImage(file = "Images/plain1.PNG")
 		self.bg_label = Label(self, image = self.bgPlain)
@@ -324,13 +335,32 @@ class bookingPage(Frame):
 #display port
 		self.bar = Label(self, relief = FLAT)
 		self.bar.place(x = 250, y = 130, width = 700, height = 30)
+		self.start_var = StringVar()
+		self.start_var.set("Tokyo")
+		self.end_var = StringVar()
+		self.end_var.set("Kyoto")
 		self.populate_bar()
 		self.display_label = Label(self.bg_label, relief = FLAT )
 		self.display_label.place(x = 248, y = 160, width = 700, height = 500)
 		self.trainVar = IntVar()
 
+
+
 		#self.starting_stop = OptionMenu(self, self.start_var, *self.stop_list)
 		#self.starting_stop.place(x = 600, y = 130)
+	def create_current_avail_other_endstop_list(self, starting_stop):
+		self.current_avail_other_endstop_list = self.stop_list.copy()
+		self.current_avail_other_endstop_list.remove(starting_stop)
+		self.populate_bar()
+
+	def create_current_avail_other_startstop_list(self, ending_stop):
+		self.current_avail_other_startstop_list = self.stop_list.copy()
+		self.current_avail_other_startstop_list.remove(ending_stop)
+		self.populate_bar()
+
+
+	def onClick_displayRoutes(self, event):
+		self.display_routes()
 
 	def populate_bar(self):
 		self.bar_date()
@@ -377,10 +407,7 @@ class bookingPage(Frame):
 		self.a.bind('<FocusIn>', self.defocus)
 	
 	def bar_stop_choices(self):
-		self.start_var = StringVar()
-		self.start_var.set("Tokyo")
-		self.end_var = StringVar()
-		self.end_var.set("Kyoto")
+		
 
 
 		self.start_label = Label(self.bar, text = "From")
@@ -389,14 +416,16 @@ class bookingPage(Frame):
 		self.end_label.place(x = 355, y = 0)
 
 		self.starting_stop = tkk.Combobox(self.bar, textvariable = self.start_var)
-		self.starting_stop['values'] = self.stop_list
+		self.starting_stop['values'] = self.current_avail_other_startstop_list
 		self.starting_stop['state'] = 'readonly'
 		self.starting_stop.bind("<FocusIn>", self.defocus)
+		self.starting_stop.bind("<<ComboboxSelected>>", self.onClick_displayRoutes)
 		self.starting_stop.place(x = 240, y = 0, width = 105)
 
 		self.ending_stop = tkk.Combobox(self.bar, textvariable = self.end_var)
-		self.ending_stop['values'] = self.stop_list
+		self.ending_stop['values'] = self.current_avail_other_endstop_list
 		self.ending_stop.bind("<FocusIn>", self.defocus)
+		self.ending_stop.bind("<<ComboboxSelected>>", self.onClick_displayRoutes)
 		self.ending_stop.place(x = 385, y = 0, width = 105)
 
 	def get_start(self):
@@ -405,8 +434,8 @@ class bookingPage(Frame):
 		return self.end_var.get()
 	def selected_date(self):
 		date = self.a.get_date()
-		date = date.strftime("%d/%m/%Y")
-		return date
+		return date.strftime("%d/%m/%Y")
+		
 	def find_dir(self):
 		start_index = 0
 		start = self.get_start()
@@ -437,9 +466,12 @@ class bookingPage(Frame):
 		return 0
 
 	def display_routes(self):
+		
 		routes = self.get_routes()
 		start = self.get_start()
+		self.create_current_avail_other_endstop_list(start)
 		end = self.get_end()
+		self.create_current_avail_other_startstop_list(end)
 		start_index = self.find_index_in_stops(start)
 		end_index = self.find_index_in_stops(end)
 		self.current_seat_button_list = []
@@ -511,6 +543,7 @@ class bookingPage(Frame):
 		self.choose_car['values'] =  ["A", "B", "C", "D", "E", "F", "G", "H"]
 		self.choose_car['state'] = "readonly"
 		self.choose_car.bind("<FocusIn>", self.defocus)
+		self.choose_car.bind("<<ComboboxSelected>>", self.onClick_showSeats)
 		self.choose_car.place(x = 250, y = 0, width = 50)
 
 		self.display_seat_label = Label(self.car_bg_label, relief = FLAT, background = "#3B3B3B").place(x = 100, y = 100, width = 1000, height = 500)
@@ -542,12 +575,13 @@ class bookingPage(Frame):
 					temp_button.image = photoImage
 					temp_button.place(x = x_level, y = y_level, width = 45, height = 45)
 					self.Seat_button_container.append(temp_button)
-					print("hello 23")
 					button_flagger += 1                  #add in the counter, carID, rowName
 				x_level = x_level + 100
 			y_level = y_level + 100
 		self.format_seat_buttons()
 
+	def onClick_showSeats(self, event):
+		self.format_seat_buttons()
 
 	def format_seat_buttons(self):
 		#when formatting, i create an information list using the index to locate the specific button, this stores the carID, the ROW string and the seat name output string
@@ -562,7 +596,6 @@ class bookingPage(Frame):
 				output = []
 				#IF THE SEAT IS TAKEN 
 				if current_col[i+4] != None:
-					print("taken")
 					purchase_completed = True
 					output.append(-1)
 
@@ -647,18 +680,12 @@ class bookingPage(Frame):
 
 		elif i == 0:
 			self.booking_list.append((self.Seat_button_information[index][1],self.Seat_button_information[index][2], self.Seat_button_information[index][3]))
-			print("selected")
 			return "Images/Seat_selected.PNG"
 
 		else:
-			print(index)
-			print(self.booking_list)
-			print(self.Seat_button_information)
 			booker_list = list(self.booking_list)
 			length = len(self.booking_list)
-			print(length)
 			for i in range(length):
-				print(self.booking_list[i])
 				if self.booking_list[i][0] == self.Seat_button_information[index][1] and self.booking_list[i][1] == self.Seat_button_information[index][2]:
 					self.booking_list.pop(i)
 					break
@@ -771,7 +798,6 @@ class bookingPage(Frame):
 
 	def make_price(self):
 		stops = self.find_number_of_stops()
-		print("stop",stops)
 		x = pow(stops, 15)
 		self.price = (2*(math.log(x)))+20
 		self.price = round(self.price*100)
